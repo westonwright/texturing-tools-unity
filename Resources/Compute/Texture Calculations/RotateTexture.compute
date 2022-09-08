@@ -1,0 +1,42 @@
+﻿#pragma kernel RotateTexture
+
+#include "../Include/TextureFunctions.compute"
+
+//StructuredBuffer<float4> inputTex;
+//RWStructuredBuffer<float4> outputTex; 
+
+Texture2D<float4> inputTex;
+RWTexture2D<float4> outputTex;
+
+int2 size;
+float rotRads;
+
+//will probably run in to issues if texture isn't a perfect square. Might change that
+[numthreads(8, 8, 1)]
+void RotateTexture(int2 id : SV_DispatchThreadID)
+{
+	if (id.x >= size.x || id.y >= size.y)
+	{
+		return;
+	}
+
+	//int pixIndex = PixelIndex(id.x, id.y, size.x);
+
+	//could make rotpoint a variable that ranges from 0 to 1 so you could rotate around any point you want
+	//might be able to get rid of this distiction
+	if (rotRads != 0)
+	{
+		int2 rotPoint = { (uint)size.x / 2, (uint)size.y / 2 };
+		float2 samplePoint = { 0,0 };
+		samplePoint.x = cos(rotRads) * (id.x - rotPoint.x) - sin(rotRads) * (id.y - rotPoint.y) + rotPoint.x;
+		samplePoint.y = sin(rotRads) * (id.x - rotPoint.x) + cos(rotRads) * (id.y - rotPoint.y) + rotPoint.y;
+
+		//outputTex[pixIndex] = BilinearSample(samplePoint, inputTex, size);
+		outputTex[id.xy] = BilinearSample(samplePoint, inputTex);
+	}
+	else
+	{
+		//outputTex[pixIndex] = inputTex[pixIndex];
+		outputTex[id.xy] = inputTex[id.xy];
+	}
+}

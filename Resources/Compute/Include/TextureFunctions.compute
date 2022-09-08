@@ -1,0 +1,30 @@
+
+float Remap(float inValue, float inMin, float inMax, float outMin, float outMax)
+{
+	return
+		(
+			(
+				(inValue - inMin) / (inMax - inMin)
+				)
+			* (outMax - outMin)
+			)
+		+ outMin;
+}
+
+
+int PixelIndex(int x, int y, int xEndSize)
+{
+	return (y * xEndSize) + x;
+}
+
+
+float4 BilinearSample(float2 samplePoint, Texture2D<float4> origTex)
+{
+	samplePoint -= float2(.5f, .5f);
+
+	float4 xCol1 = lerp(origTex[int2(floor(samplePoint.x), floor(samplePoint.y))], origTex[int2(ceil(samplePoint.x), floor(samplePoint.y))], samplePoint.x - floor(samplePoint.x));
+	float4 xCol2 = lerp(origTex[int2(floor(samplePoint.x), ceil(samplePoint.y))], origTex[int2(ceil(samplePoint.x), ceil(samplePoint.y))], samplePoint.x - floor(samplePoint.x));
+	float4 finalColor = lerp(xCol1, xCol2, samplePoint.y - floor(samplePoint.y));
+	
+	return finalColor;
+}

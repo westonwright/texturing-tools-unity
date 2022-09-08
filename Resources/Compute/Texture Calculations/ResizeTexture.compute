@@ -1,0 +1,29 @@
+﻿#pragma kernel ResizeTexture
+
+#include "../Include/TextureFunctions.compute"
+
+//StructuredBuffer<float4> inputTex;
+//RWStructuredBuffer<float4> outputTex;
+
+Texture2D<float4> inputTex;
+RWTexture2D<float4> outputTex;
+
+int2 outputSize;
+float2 sizeRatio;
+
+[numthreads(8, 8, 1)]
+void ResizeTexture(int2 id : SV_DispatchThreadID)
+{
+	if (id.x >= outputSize.x || id.y >= outputSize.y)
+	{
+		return;
+	}
+
+	//int pixIndex = PixelIndex(id.x, id.y, outputSize.x);
+
+	float2 samplePoint = { id.x * sizeRatio.x, id.y * sizeRatio.y };
+	//float2 samplePoint = { id.x, id.y };
+
+	//outputTex[pixIndex] = BilinearSample(samplePoint, inputTex, inputSize);
+	outputTex[id.xy] = BilinearSample(samplePoint, inputTex);
+}

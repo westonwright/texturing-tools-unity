@@ -1,0 +1,9 @@
+﻿#pragma kernel ClearTexture
+
+RWTexture2D<float4> tex;
+
+[numthreads(8,8,1)]
+void ClearTexture (uint2 id : SV_DispatchThreadID)
+{
+	tex[id.xy] = float4(0, 0, 0, 0);
+}

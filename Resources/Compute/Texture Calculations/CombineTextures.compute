@@ -1,0 +1,45 @@
+﻿#pragma kernel CombineTextures
+
+#include "../Include/TextureFunctions.compute"
+
+//bottomTex is also the endTex
+Texture2D<float4> topTex;
+RWTexture2D<float4> bottomTex;
+
+int2 topTexSize;
+int2 bottomTexSize;
+float2 sizeRatio;
+
+[numthreads(8, 8, 1)]
+void CombineTextures(int2 id : SV_DispatchThreadID)
+{
+	if (id.x >= bottomTexSize.x || id.y >= bottomTexSize.y)
+	{
+		return;
+	}        
+
+    //makes sure textures can still be combined if they aren't the same resolution
+    float4 topTexCol = (sizeRatio.x != 1 || sizeRatio.y != 1) ?
+        BilinearSample(float2(id.x * sizeRatio.x, id.y * sizeRatio.y), topTex) :
+        topTex[id.xy];
+
+    //skips unnecessary calcuation if no changes are needed
+    if (bottomTex[id.xy].w == 0)
+    {
+        bottomTex[id.xy] = topTexCol;
+    }
+    else if (topTexCol.w != 0)
+    {
+        float4 finalPixCol;
+        //color = newtransp / (currenttransp * (1 - newtransp)) + newtransp)
+        //transp = currenttransp * (1 - newtransp) + newtransp
+        finalPixCol.xyz = lerp(
+            bottomTex[id.xy].xyz,
+            topTexCol.xyz,
+            topTexCol.w / (bottomTex[id.xy].w * (1 - topTexCol.w) + topTexCol.w));
+        //if not using lerp
+        //bottomTexCol + (topTexCol - bottomTexCol) * (topTexCol.w / (bottomTexCol.w * (1 - topTexCol.w) + topTexCol.w))
+        finalPixCol.w = bottomTex[id.xy].w * (1 - topTexCol.w) + topTexCol.w;
+        bottomTex[id.xy] = finalPixCol;
+    }
+}

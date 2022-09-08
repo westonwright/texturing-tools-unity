@@ -1,0 +1,19 @@
+{
+  "name": "com.weston-wright.surface-drawing-unity",
+  "description": "Allows for quickly drawing on surfaces with layers",
+  "version": "0.9.0",
+  "unity": "2021.3",
+  "unityRelease": "3f1",
+  "displayName": "Surface Drawing",
+  "dependencies": {
+  },
+  "keywords": [
+    "drawing",
+    "art",
+    "utility",
+    "tool",
+    "brush"
+  ],
+  "type": "sample",
+  "hideInEditor": false
+}

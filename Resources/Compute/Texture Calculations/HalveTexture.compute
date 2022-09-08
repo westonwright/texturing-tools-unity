@@ -1,0 +1,39 @@
+﻿#pragma kernel HalveTexture
+
+#include "../Include/TextureFunctions.compute"
+
+Texture2D<float4> inputTex;
+RWTexture2D<float4> outputTex;
+
+float2 sizeRatio;
+
+int2 outputSize;
+bool halveX;
+bool halveY;
+
+[numthreads(8,8,1)]
+void HalveTexture (int2 id : SV_DispatchThreadID)
+{
+	if (id.x >= outputSize.x || id.y >= outputSize.y)
+	{
+		return;
+	}
+	
+
+	if (halveX && halveY)
+	{
+		outputTex[id.xy] = (inputTex[int2(id.x * 2, id.y * 2)] + inputTex[int2((id.x * 2) + 1, id.y * 2)] + inputTex[int2(id.x * 2, (id.y * 2) + 1)] + inputTex[int2((id.x * 2) + 1, (id.y * 2) + 1)]) / 4;
+	}
+	else if (halveX)
+	{
+		outputTex[id.xy] = (inputTex[int2(id.x * 2, id.y)] + inputTex[int2((id.x * 2) + 1, id.y)]) / 2;
+	}
+	else if(halveY)
+	{
+		outputTex[id.xy] = (inputTex[int2(id.x, id.y * 2)], inputTex[int2(id.x, (id.y * 2) + 1)]) / 2;
+	}
+	else 
+	{
+		outputTex[id.xy] = inputTex[id.xy];
+	}
+}

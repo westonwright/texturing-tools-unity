@@ -1,0 +1,20 @@
+﻿#pragma kernel ErasePoint
+#include "../Include/TextureFunctions.compute"
+
+Texture2D<float4> eraseTex;
+RWTexture2D<float4> outputTex;
+
+int2 outputSize;
+
+[numthreads(8,8,1)]
+void ErasePoint (int2 id : SV_DispatchThreadID)
+{
+    if (id.x >= outputSize.x || id.y >= outputSize.y)
+    {
+        return;
+    }
+
+    float4 finalPixCol = outputTex[id.xy];
+    finalPixCol.w = finalPixCol.w - (finalPixCol.w * eraseTex[id.xy].w);
+    outputTex[id.xy] = finalPixCol;
+}

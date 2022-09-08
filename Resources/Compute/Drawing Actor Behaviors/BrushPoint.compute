@@ -1,0 +1,32 @@
+﻿#pragma kernel DrawPoint
+#include "../Include/TextureFunctions.compute"
+
+RWTexture2D<float4> outputTex;
+Texture2D<float4> brushAlpha;
+
+int4 brushRect;
+int2 brushXYOffset;
+float4 brushColor;
+
+[numthreads(8, 8, 1)]
+void DrawPoint(int2 id : SV_DispatchThreadID)
+{
+    if (id.x >= brushRect.z || id.y >= brushRect.w)
+    {
+        return;
+    }
+
+    int2 curBrushPix =
+    {
+        brushXYOffset.x < 0 ? id.x + abs(brushXYOffset.x) : id.x,
+        brushXYOffset.y < 0 ? id.y + abs(brushXYOffset.y) : id.y
+    };
+
+    float transparency = brushAlpha[curBrushPix].w;
+
+    int2 curOutputPix = { id.x + brushRect.x, id.y + brushRect.y };
+
+    float4 finalPixCol = { brushColor.x, brushColor.y, brushColor.z, 0 };
+    finalPixCol.w = outputTex[curOutputPix.xy].w * (1 - transparency) + transparency;
+    outputTex[curOutputPix.xy] = finalPixCol;
+}

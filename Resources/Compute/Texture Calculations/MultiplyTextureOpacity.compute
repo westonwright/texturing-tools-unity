@@ -1,0 +1,20 @@
+﻿#pragma kernel MultiplyOpacity
+
+#include "../Include/TextureFunctions.compute"
+
+RWTexture2D<float4> tex;
+
+int2 texSize;
+float brushOpacity;
+
+[numthreads(8,8,1)]
+void MultiplyOpacity(int2 id : SV_DispatchThreadID)
+{
+	if (id.x >= texSize.x || id.y >= texSize.y)
+	{
+		return;
+	}
+
+    float4 finalColor = { tex[id.xy].x, tex[id.xy].y, tex[id.xy].z, tex[id.xy].w * brushOpacity };
+	tex[id.xy] = finalColor;
+}

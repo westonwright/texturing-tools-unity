@@ -1,0 +1,29 @@
+#pragma kernel CalculateHardness
+
+#include "../Include/TextureFunctions.compute"
+
+RWTexture2D<float4> outputTex;
+
+int brushSize;
+float hardness;
+
+[numthreads(8, 8, 1)]
+void CalculateHardness(int2 id : SV_DispatchThreadID)
+{
+    if (id.x >= brushSize || id.y >= brushSize)
+    {
+        return;
+    }
+
+    float opacity = saturate(
+        Remap(
+            outputTex[id.xy].a,
+            0,
+            1 - saturate(hardness),
+            0,
+            1
+            )
+        );
+    
+    outputTex[id.xy] = float4(outputTex[id.xy].rgb, opacity);
+}

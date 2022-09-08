@@ -1,0 +1,28 @@
+#pragma kernel DrawPoint
+#include "../Include/TextureFunctions.compute"
+
+RWTexture2D<float4> outputTex;
+
+int brushSize;
+int brushRadius;
+
+[numthreads(8, 8, 1)]
+void DrawPoint(int2 id : SV_DispatchThreadID)
+{
+    if (id.x >= brushSize || id.y >= brushSize)
+    {
+        return;
+    }
+
+    float transparency = saturate(
+        Remap(
+            distance(id.xy, float2(brushRadius, brushRadius)),
+            0,
+            brushRadius,
+            1,
+            0
+            )
+        );
+    
+    outputTex[id.xy] = float4(1, 1, 1, transparency);
+}

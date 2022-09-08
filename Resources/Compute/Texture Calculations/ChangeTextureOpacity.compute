@@ -1,0 +1,18 @@
+﻿#pragma kernel ChangeOpacity
+
+RWTexture2D<float4> tex;
+
+int2 texSize;
+float opacity;
+
+[numthreads(8,8,1)]
+void ChangeOpacity(int2 id : SV_DispatchThreadID)
+{
+	if (id.x >= texSize.x || id.y >= texSize.y)
+	{
+		return;
+	}
+
+    float4 finalColor = { tex[id.xy].x, tex[id.xy].y, tex[id.xy].z, opacity };
+	tex[id.xy] = finalColor;
+}

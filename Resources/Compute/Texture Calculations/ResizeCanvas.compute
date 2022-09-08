@@ -1,0 +1,39 @@
+﻿#pragma kernel ResizeCanvas
+
+#include "../Include/TextureFunctions.compute"
+
+//StructuredBuffer<float4> inputTex;
+//RWStructuredBuffer<float4> outputTex;
+
+Texture2D<float4> inputTex;
+RWTexture2D<float4> outputTex;
+
+int2 inputSize;
+int2 outputSize;
+
+int2 xyOffset;
+
+[numthreads(8, 8, 1)]
+void ResizeCanvas(int2 id : SV_DispatchThreadID)
+{
+	if (id.x >= outputSize.x || id.y >= outputSize.y)
+	{
+		return;
+	}
+
+	//int pixIndex = PixelIndex(id.x, id.y, outputSize.x);
+
+	//currently only works if increasing the size of the canvas.
+	//should probably change that
+	if (id.x < xyOffset.x || id.x > inputSize.x + xyOffset.x || id.y < xyOffset.y || id.y > inputSize.y + xyOffset.y)
+	{
+		//outputTex[pixIndex] = float4(0, 0, 0, 0);
+		outputTex[id.xy] = float4(0, 0, 0, 0);
+	}
+	else
+	{
+		int2 samplePoint = { id.x - xyOffset.x, id.y - xyOffset.y };
+		//outputTex[pixIndex] = inputTex[(samplePoint.y * inputSize.x) + samplePoint.x];
+		outputTex[id.xy] = inputTex[samplePoint.xy];
+	}
+}
