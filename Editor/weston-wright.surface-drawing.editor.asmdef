@@ -1,3 +1,18 @@
 {
-	"name": "weston-wright.surface-drawing.editor"
+    "name": "weston-wright.surface-drawing.editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:579feb45dd19c4242b6e3b6d81516f1e"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }
