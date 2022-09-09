@@ -198,9 +198,9 @@ public class DrawingChannel : IDrawingLayerHolder
     }
 
     // continues the stroke on a line based on the previous posiiton
-    public void SetStrokeContinuous(Vector2 canvasCoord)
+    public void SetStrokeContinuous(Vector2 uvCoords)
     {
-        if(SetStroke(canvasCoord, out Vector2Int curPixelCoord))
+        if(SetStroke(uvCoords, out Vector2Int curPixelCoord))
         {
             stroke.ContinuousEnqueue(curPixelCoord);
         }

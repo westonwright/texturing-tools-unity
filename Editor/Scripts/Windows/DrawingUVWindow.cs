@@ -8,17 +8,23 @@ public class DrawingUVWindow : EditorWindow
     private bool enableWireframe = true;
     private Vector2 scrollPercent = Vector2.one * .5f;
     private float zoom = 1;
+    private bool pointerDown = false;
+    private DrawingSurface drawingSurface;
 
     private static readonly float maxZoom = 5;
-    private static readonly float minZoom = .25f;
+    private static readonly float minZoom = .15f;
     private static readonly float zoomInRate = 1.1f;
     private static readonly float zoomOutRate;
     private static readonly float snapThreshold;
+    private static readonly float lineHeight;
+    private static readonly Color backgroundColor;
 
     static DrawingUVWindow()
     {
         zoomOutRate = 1f / zoomInRate;
         snapThreshold = (1 * zoomOutRate) * .09f;
+        lineHeight = EditorGUIUtility.singleLineHeight;
+        backgroundColor = new Color(.15f, .15f, .15f, 1);
     }
 
     [MenuItem("Window/UV Drawing")]
@@ -27,74 +33,153 @@ public class DrawingUVWindow : EditorWindow
         GetWindow<DrawingUVWindow>("UV Drawing");
     }
 
+    private void OnEnable()
+    {
+        UnityEditor.Undo.undoRedoPerformed += UndoCallback;
+    }
+
+    private void OnDisable()
+    {
+        UnityEditor.Undo.undoRedoPerformed -= UndoCallback;
+
+        if (pointerDown)
+        {
+            PointerUpActions();
+        }
+    }
+    private void OnLostFocus()
+    {
+        if (pointerDown)
+        {
+            PointerUpActions();
+        }
+    }
+
+    private void OnSelectionChange()
+    {
+        if (pointerDown)
+        {
+            PointerUpActions();
+        }
+        Repaint();
+    }
+
+    void UndoCallback()
+    {
+        if(drawingSurface != null)
+        {
+            drawingSurface.Initialize();
+        }
+        Repaint();
+    }
+
     private void OnGUI()
     {
         Event current = Event.current;
 
-        if (DrawingSurfaceStream.drawingSurface == null)
+        GUIStyle centeredBold = new GUIStyle(GUI.skin.label);
+        centeredBold.alignment = TextAnchor.MiddleCenter;
+        centeredBold.fontStyle = FontStyle.Bold;
+
+        Rect topControlsRect = new Rect(0, 0, position.width, lineHeight * 3);
+
+        Rect availableRect = new Rect(0, topControlsRect.height, position.width, position.height - topControlsRect.height);
+
+        drawingSurface = DrawingSurfaceStream.drawingSurface;
+        if (drawingSurface == null)
         {
-            // put this in the center
-            EditorGUILayout.LabelField("Select a Drawing Surface to Begin Editing");
+            EditorGUI.DrawRect(availableRect, backgroundColor);
+            EditorGUI.LabelField(
+                availableRect,
+                "Select a Drawing Surface to Begin Editing",
+                centeredBold);
             return;
         }
-        if (DrawingSurfaceStream.drawingSurface.activeChannel == null)
+        DrawingChannel activeChannel = drawingSurface.activeChannel;
+        if (activeChannel == null)
         {
-            EditorGUILayout.LabelField("No active Channels");
+            EditorGUI.DrawRect(availableRect, backgroundColor);
+            EditorGUI.LabelField(
+                availableRect,
+                "No active Channels",
+                centeredBold);
             return;
         }
-        if (DrawingSurfaceStream.drawingSurface.activeChannel.layers.Count < 1)
+        // need better check than just if layers exis
+        // well maybe not. I guess its the same as how
+        // the 3d objects handle it
+        if (activeChannel.layers.Count < 1)
         {
-            EditorGUILayout.LabelField("No Drawable Layers");
+            EditorGUI.DrawRect(availableRect, backgroundColor);
+            EditorGUI.LabelField(
+                availableRect,
+                "No Drawable Layers",
+                centeredBold);
             return;
         }
 
-
-        EditorGUILayout.BeginHorizontal();
-        enableWireframe = GUILayout.Toggle(enableWireframe, "Enable Wireframe");
-        EditorGUILayout.EndHorizontal();
-        
-        EditorGUILayout.BeginHorizontal();
-        //enableWireframe = GUILayout.Toggle(enableWireframe, "Enable Wireframe");
-        EditorGUILayout.EndHorizontal();
-
-        Rect canvasRect = GUILayoutUtility.GetRect(position.width, position.height - (EditorGUIUtility.singleLineHeight * 2));
-
-        Vector2 textureResolution = DrawingSurfaceStream.drawingSurface.activeChannel.resolution;
+        Vector2 textureResolution = activeChannel.resolution;
         Vector2 textureSize = textureResolution * zoom;
-        Vector2 minMaxOffsetX = new Vector2(canvasRect.x, -(textureSize.x - canvasRect.x));
-        Vector2 minMaxOffsetY = new Vector2(canvasRect.y, -(textureSize.y - canvasRect.y));
+
+        Rect clipRect = availableRect;
+
+        // draw scroll bars
+
+        Vector2 sizeRatio = availableRect.size / textureSize;
+        if (textureSize.x > availableRect.width)
+        {
+            clipRect.height -= lineHeight;
+            scrollPercent.x = GUI.HorizontalScrollbar(
+                new Rect(clipRect.x, clipRect.y + clipRect.height, availableRect.width - lineHeight, lineHeight),
+                scrollPercent.x,
+                sizeRatio.x,
+                0,
+                1 + sizeRatio.x
+                );
+        }
+        if (textureSize.y > availableRect.height)
+        {
+            clipRect.width -= lineHeight;
+            scrollPercent.y = GUI.VerticalScrollbar(
+                new Rect(clipRect.x + clipRect.width, clipRect.y, lineHeight, availableRect.height - lineHeight),
+                scrollPercent.y,
+                sizeRatio.y,
+                0,
+                1 + sizeRatio.y
+                );
+        }
+
+        GUI.BeginClip(clipRect);
+
+        Rect canvasRect = new Rect(0, 0, clipRect.width, clipRect.height);
+        EditorGUI.DrawRect(canvasRect, backgroundColor);
+
+        Vector2 minMaxOffsetX = new Vector2(canvasRect.x, (canvasRect.width - textureSize.x));
+        Vector2 minMaxOffsetY = new Vector2(canvasRect.y, (canvasRect.height - textureSize.y));
         Rect textureRect = new Rect(
             Mathf.Lerp(minMaxOffsetX.x, minMaxOffsetX.y, scrollPercent.x),
             Mathf.Lerp(minMaxOffsetY.x, minMaxOffsetY.y, scrollPercent.y),
             textureSize.x,
             textureSize.y
             );
-        EditorGUI.DrawRect(canvasRect, Color.gray);
-
-        Vector2 portionSeenX = new Vector2(
-            Mathf.Max(-textureRect.x, canvasRect.min.x),
-            Mathf.Min(textureRect.max.x, canvasRect.max.x)
-            );
-        Vector2 seenPercentX = new Vector2(
-            portionSeenX.x / textureRect.width,
-            (portionSeenX.y / textureRect.width) + (portionSeenX.x / textureRect.width)
-            );
-        Vector2 portionSeenY = new Vector2(
-            Mathf.Max(-textureRect.y, canvasRect.min.y),
-            Mathf.Min(textureRect.max.y, canvasRect.max.y)
-            );
-        Vector2 seenPercentY = new Vector2(
-            portionSeenY.x / textureRect.height,
-            (portionSeenY.y / textureRect.height) + (portionSeenY.x / textureRect.height)
-            );
         Vector2 workspaceMouse = new Vector2(
             Mathf.Clamp(current.mousePosition.x / canvasRect.width, 0, 1),
             Mathf.Clamp(current.mousePosition.y / canvasRect.height, 0, 1)
             );
-        Vector2 relativeMouse = new Vector2(
-            Mathf.Lerp(seenPercentX.x, seenPercentX.y, workspaceMouse.x),
-            Mathf.Lerp(seenPercentY.x, seenPercentY.y, workspaceMouse.y)
-            );
+
+        // this clip draws the texture
+        GUI.BeginClip(textureRect);
+
+        Vector2 relativeMouse = current.mousePosition / textureRect.size;
+        Vector2 uvMouse = relativeMouse;
+        uvMouse.y = 1 - uvMouse.y;
+
+        // draws the actual texture being edited
+        Rect drawRect = new Rect(0, 0, textureRect.width, textureRect.height);
+        Rect checkerRect = new Rect(0, 0, 80 * zoom, 80 * zoom);
+        GUI.DrawTextureWithTexCoords(drawRect, EditorStaticMembers.transparentChecker, checkerRect);
+        GUI.DrawTexture(drawRect, activeChannel.outputTexture, ScaleMode.StretchToFill);
+        GUI.EndClip();
 
         if (current.type == EventType.ScrollWheel)
         {
@@ -113,28 +198,49 @@ public class DrawingUVWindow : EditorWindow
                     zoom = 1f;
                 }
                 zoom = Mathf.Clamp(zoom, minZoom, maxZoom);
-                if(zoom > 1)
+
+                if (prevZoom != zoom)
                 {
-                    if (prevZoom != zoom)
-                    {
-                        // y = (relativeMouse - workspaceMouse) * newSize
+                    Vector2 newSize = textureResolution * zoom;
+                    float scaleSize = zoom / prevZoom;
 
-                        Vector2 newSize = textureResolution * zoom;
-                        float scaleSize = zoom / prevZoom;
+                    Vector2 goalPos = (workspaceMouse * canvasRect.size) - ((relativeMouse * textureRect.size) * scaleSize);
+                    Vector2 predictedOver = (goalPos + newSize) - canvasRect.size;
 
-                        Vector2 goalPos = (workspaceMouse * canvasRect.size) - ((relativeMouse * textureRect.size) * scaleSize);
-                        //Vector2 goalPos = textureRect.position + (relativeMouse - workspaceMouse) * newSize;
-                        Vector2 predictedOver = (goalPos + newSize) - canvasRect.size;
-
-                        scrollPercent = -goalPos / (-goalPos + predictedOver);
-                    }
-                }
-                // if its too small, just keep it in the center
-                else
-                {
-                    scrollPercent = Vector2.one * .5f;
+                    Vector2 newScrollPercent = -goalPos / (-goalPos + predictedOver);
+                    scrollPercent = new Vector2(
+                        newSize.x > availableRect.width ? newScrollPercent.x : .5f,
+                        newSize.y > availableRect.height ? newScrollPercent.y : .5f
+                        );
                 }
             }
+            Repaint();
+        }
+
+        if (current.type == EventType.MouseDown && current.button == 0)
+        {
+            string undoText = "UV Drawing On " + drawingSurface.name;
+            UnityEditor.Undo.RegisterCompleteObjectUndo(drawingSurface, undoText);
+            foreach (ScriptableObject SO in drawingSurface.activeChannel.ActiveSOs())
+            {
+                UnityEditor.Undo.RegisterCompleteObjectUndo(SO, undoText);
+            }
+            UnityEditor.Undo.FlushUndoRecordObjects();
+
+            pointerDown = true;
+            drawingSurface.UVPointerDown(uvMouse);
+            Repaint();
+        }
+
+        if (current.type == EventType.MouseDrag && current.button == 0)
+        {
+            drawingSurface.UVPointerDrag(uvMouse);
+            Repaint();
+        }
+
+        if (current.type == EventType.MouseUp && current.button == 0)
+        {
+            PointerUpActions();
             Repaint();
         }
 
@@ -142,6 +248,7 @@ public class DrawingUVWindow : EditorWindow
         {
             if (DrawingSurfaceStream.uvLines.Length >= 2)
             {
+                Handles.color = new Color(1, 1, 1, zoom >= 1 ? .5f : .5f * zoom);
                 Handles.matrix = Matrix4x4.TRS(
                     new Vector3(textureRect.x, textureRect.y),
                     Quaternion.identity,
@@ -151,6 +258,11 @@ public class DrawingUVWindow : EditorWindow
             }
         }
 
+        GUI.EndClip();
+
+        //GUI.BeginGroup();
+        //enableWireframe = GUILayout.Toggle(enableWireframe, "Enable Wireframe");
+
         // this works for now, but wont if the mouse moves outside 
         // the workspace while drawing
         /*
@@ -159,5 +271,18 @@ public class DrawingUVWindow : EditorWindow
             Repaint();
         }
         */
+    }
+
+    private void PointerUpActions()
+    {
+        pointerDown = false;
+
+        if(drawingSurface != null)
+        {
+            drawingSurface.UVPointerUp();
+            // dont know if serialized object part matters here
+            //serializedObject.ApplyModifiedProperties();
+            drawingSurface.Initialize();
+        }
     }
 }

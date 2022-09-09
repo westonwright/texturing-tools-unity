@@ -16,7 +16,7 @@ public class DrawingSurface : MonoBehaviour
 
     private Vector2[] prevUVs;
     private int prevTriIndex;
-    private Vector2 prevScreenPixelCoords;
+    private Vector2Int prevScreenPixelCoords;
 
     [SerializeReference]
     [HideInInspector]
@@ -64,10 +64,10 @@ public class DrawingSurface : MonoBehaviour
     #region events/update
 
     // Returns true if the pointer hit the object
-    public bool PointerDown(Vector3 screenPixelCoords)
+    public bool PointerDown(Vector2Int screenPixelCoords)
     {
         prevScreenPixelCoords = screenPixelCoords;
-        Ray pointerRay = Camera.current.ScreenPointToRay(prevScreenPixelCoords);
+        Ray pointerRay = Camera.current.ScreenPointToRay(HelperFunctions.Vec2IntToVec2(prevScreenPixelCoords));
         RaycastHit hit;
 
         if (Physics.Raycast(pointerRay, out hit))
@@ -87,11 +87,20 @@ public class DrawingSurface : MonoBehaviour
         }
         return false;
     }
+    public void UVPointerDown(Vector3 uvCoords)
+    {
+        activeChannel.SetStrokeDiscontinuous(uvCoords);
+        TempApplyStroke();
+    }
 
     public void PointerDrag(Vector2Int screenPixelCoords)
     {
         if (screenPixelCoords != prevScreenPixelCoords)
         {
+            // if you are using spacing, then you also want to make sure
+            // we pass cleanly over all vertices
+            // if we skip one we might accidentally detect a break
+            // also tells us how to set the stroke (continuous or discontinuous
             if (activeChannel.UsesSpacing())
             {
                 float positionDist = Vector2.Distance(screenPixelCoords, prevScreenPixelCoords);
@@ -182,11 +191,24 @@ public class DrawingSurface : MonoBehaviour
         }
         prevScreenPixelCoords = screenPixelCoords;
     }
+    public void UVPointerDrag(Vector2 uvCoords)
+    {
+        if (activeChannel.UsesSpacing())
+            activeChannel.SetStrokeContinuous(uvCoords);
+        else
+            activeChannel.SetStrokeDiscontinuous(uvCoords);
+        TempApplyStroke();
+    }
 
     public void PointerUp()
     {
         FinalApplyStroke();
     }
+    public void UVPointerUp()
+    {
+        FinalApplyStroke();
+    }
+
     private void TempApplyStroke()
     {
         activeChannel.IterateStroke();

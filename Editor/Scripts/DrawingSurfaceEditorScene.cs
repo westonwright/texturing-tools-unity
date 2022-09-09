@@ -40,7 +40,11 @@ public partial class DrawingSurfaceEditor : Editor
             UnityEditor.Undo.FlushUndoRecordObjects();
 
             pointerDown = true;
-            drawingSurface.PointerDown(HandleUtility.GUIPointToScreenPixelCoordinate(current.mousePosition));
+            drawingSurface.PointerDown(
+                HelperFunctions.Vec2ToVec2Int(
+                HandleUtility.GUIPointToScreenPixelCoordinate(current.mousePosition)
+                )
+                );
 
             //EditorUtility.SetDirty(drawingSurface);
             //Selection.activeGameObject = drawingSurface.gameObject; // dont actually need this
