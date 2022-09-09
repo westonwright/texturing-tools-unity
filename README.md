@@ -2,7 +2,7 @@
 
 This package contains a variety of editor tools to allow you to do some basic texture work within Unity. With one (or a few) scripts, you can draw freely on any 3D object in your scene. Features include a layer-based system with customizable brushes with full undo support. Textures can be saved as well as brush presets for use later. Runtime versions of these tools are also on the horizon, along with multiple other texturing goodies.
 
-## Check the [Wiki](https://github.com/westonwright/texture-tools-unity/wiki/_new)!
+## Check the [Wiki](https://github.com/westonwright/texturing-tools-unity/wiki)!
 Theres a lot of information there like:
 * [Features](https://github.com/westonwright/texture-tools-unity/wiki/Features)
 * [Saving](https://github.com/westonwright/texture-tools-unity/wiki/Saving)
