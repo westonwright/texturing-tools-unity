@@ -18,23 +18,22 @@ public class DrawingSurface : MonoBehaviour
     private int prevTriIndex;
     private Vector2Int prevScreenPixelCoords;
 
-    [SerializeReference]
-    [HideInInspector]
-    private List<DrawingChannel> drawingChannels = new List<DrawingChannel>() { new DrawingChannel() };
+    [SerializeField]
+    private List<DrawingChannel> _channels = new List<DrawingChannel>() { new DrawingChannel() };
+    public IList<DrawingChannel> channels { get => _channels; }
     public DrawingChannel activeChannel
     {
         get
         {
-            if (activeChannelIndex < drawingChannels.Count)
-                return drawingChannels[activeChannelIndex];
+            if (_activeChannelIndex < _channels.Count)
+                return _channels[_activeChannelIndex];
             else 
                 return null; // theres probably a better answer than this
         }
     }
 
     [SerializeField]
-    [HideInInspector]
-    private int activeChannelIndex = 0;
+    private int _activeChannelIndex = 0;
 
     #region initialization
     void Start()
@@ -52,25 +51,73 @@ public class DrawingSurface : MonoBehaviour
     public void Initialize()
     {
         // TODO: fix the initialization
-        foreach(DrawingChannel channel in drawingChannels)
+        foreach(DrawingChannel channel in _channels)
         {
             channel.Initialize();
+            _surfaceMaterial.SetTexture(channel.name, channel.outputTexture);
         }
+        //_surfaceMaterial.SetTexture(activeChannel.name, activeChannel.outputTexture);
+    }
+    public void RemovedChannel(string name)
+    {
+        if (_surfaceMaterial.HasTexture(name))
+        {
+            _surfaceMaterial.SetTexture(name, null);
+        }
+    }
 
-        _surfaceMaterial.SetTexture(activeChannel.name, activeChannel.outputTexture);
+    /// <summary>
+    /// When layers are duplicated, we need to clean them so that
+    /// they do not share the same data
+    /// </summary>
+    public void CreateNewChannelInPlace()
+    {
+        if (_channels.Count < 1) return;
+
+        channels[0] = new DrawingChannel();
     }
     #endregion
 
     #region events/update
+
+    /*
+    /// <summary>
+    /// puts out the uv coords of the tri that was hit
+    /// </summary>
+    /// <param name="ray"></param>
+    /// <param name="uvData"></param>
+    /// <returns></returns>
+    public bool UVHit(Vector2Int screenPixelCoords, out Vector2[] uvData)
+    {
+        Ray pointerRay = Camera.current.ScreenPointToRay(HelperFunctions.Vec2IntToVec2(prevScreenPixelCoords));
+        if (Physics.Raycast(pointerRay, out RaycastHit hit))
+        {
+            uvData = new Vector2[3];
+
+            List<Vector2> uvs = new List<Vector2>();
+            List<int> tris = new List<int>();
+            surfaceMesh.GetUVs(0, uvs);
+            surfaceMesh.GetTriangles(tris, 0);
+
+            int tri = hit.triangleIndex;
+            uvData[0] = uvs[tris[(tri * 3)]];
+            uvData[1] = uvs[tris[(tri * 3) + 1]];
+            uvData[2] = uvs[tris[(tri * 3) + 2]];
+
+            return true;
+        }
+        uvData = new Vector2[0];
+        return false;
+    }
+    */
 
     // Returns true if the pointer hit the object
     public bool PointerDown(Vector2Int screenPixelCoords)
     {
         prevScreenPixelCoords = screenPixelCoords;
         Ray pointerRay = Camera.current.ScreenPointToRay(HelperFunctions.Vec2IntToVec2(prevScreenPixelCoords));
-        RaycastHit hit;
 
-        if (Physics.Raycast(pointerRay, out hit))
+        if (Physics.Raycast(pointerRay, out RaycastHit hit))
         {
             if (hit.transform.gameObject == this.gameObject)
             {

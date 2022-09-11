@@ -1,20 +1,19 @@
 using System.Collections;
 using System.Collections.Generic;
+using System;
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
+
+[Serializable]
 public abstract class DrawingActor
 {
-    protected static string computeShaderPath;
-    static DrawingActor()
-    {
-        computeShaderPath = DrawingStaticMembers.computeShaderPath + DrawingStaticMembers.computeShaderActorBehaviorsPath;
-    }
-
+    // this needs to be saved so the correct type can be derived
+    // from json serialization
     [SerializeField]
-    protected DrawingActorType _actorEnum;
-    public DrawingActorType actorEnum { get => _actorEnum; }
+    protected DrawingActorType _typeEnum;
+    public DrawingActorType typeEnum { get => _typeEnum; }
     //measured in pixels
     //pixels are in refrence to pixels of the image on the plane, not pixels of the screen
     // this is diameter, not radius
@@ -33,6 +32,10 @@ public abstract class DrawingActor
 
     [SerializeField]
     protected string _actorTexturePath = "";
+#if UNITY_EDITOR
+    [SerializeField]
+    protected string _tempActorTexturePath = "";
+#endif
     protected Texture2D _actorTexture = null;
 
     public DrawingActor() { }
@@ -50,37 +53,23 @@ public abstract class DrawingActor
 
 #if UNITY_EDITOR
     public abstract void EditorInitialize();
+
+    public abstract void EditorTempInitialize();
+
     public abstract void EditorSave();
+    public abstract void EditorTempSave();
 
     public abstract void DrawGUI(Vector4 margin);
-#endif
-}
 
-public enum DrawingActorType
-{
-    brush,
-    pencil,
-    eraser
-}
-
-public class DrawingActorSelector
-{
-    [SerializeField]
-    DrawingActorType drawingActorType;
-
-    public DrawingActor DrawingActor(string json)
+    protected void EditorLoadTextureAtPath(string path)
     {
-        switch (drawingActorType)
+        if (path.Length > 0)
         {
-            case DrawingActorType.brush:
-                return JsonUtility.FromJson<DrawingActorBrush>(json);
-            case DrawingActorType.pencil:
-                return JsonUtility.FromJson<DrawingActorBrush>(json);
-                //return JsonUtility.FromJson<DrawingActorPencil>(json);
-            case DrawingActorType.eraser:
-                return JsonUtility.FromJson<DrawingActorBrush>(json);
-                //return JsonUtility.FromJson<DrawingActorEraser>(json);
+            if (System.IO.File.Exists(path))
+            {
+                _actorTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            }
         }
-        return new DrawingActorBrush();
     }
+#endif
 }

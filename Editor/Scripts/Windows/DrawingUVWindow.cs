@@ -5,6 +5,9 @@ using UnityEditor;
 
 public class DrawingUVWindow : EditorWindow
 {
+    private bool constantRepaint = false;
+    private int r = 0;
+    private bool repainted = false;
     private bool enableWireframe = true;
     private Vector2 scrollPercent = Vector2.one * .5f;
     private float zoom = 1;
@@ -27,10 +30,10 @@ public class DrawingUVWindow : EditorWindow
         backgroundColor = new Color(.15f, .15f, .15f, 1);
     }
 
-    [MenuItem("Window/UV Drawing")]
+    [MenuItem("Window/Drawing/Drawing UV")]
     public static void OpenWindow()
     {
-        GetWindow<DrawingUVWindow>("UV Drawing");
+        GetWindow<DrawingUVWindow>("Drawing UV");
     }
 
     private void OnEnable()
@@ -55,6 +58,15 @@ public class DrawingUVWindow : EditorWindow
         }
     }
 
+    void UndoCallback()
+    {
+        if (drawingSurface != null)
+        {
+            drawingSurface.Initialize();
+        }
+        Repaint();
+    }
+
     private void OnSelectionChange()
     {
         if (pointerDown)
@@ -63,19 +75,36 @@ public class DrawingUVWindow : EditorWindow
         }
         Repaint();
     }
-
-    void UndoCallback()
+    public void OnInspectorUpdate()
     {
-        if(drawingSurface != null)
+        if (!constantRepaint)
         {
-            drawingSurface.Initialize();
+            Repaint();
         }
-        Repaint();
+    }
+
+    private void Update()
+    {
+        if (constantRepaint)
+        {
+            constantRepaint = false;
+            Repaint();
+        }
     }
 
     private void OnGUI()
     {
         Event current = Event.current;
+
+        // allows always updating while mouse is over the window
+        // for preview and stuff like that
+        if(current.mousePosition.x >= 0 && 
+            current.mousePosition.y >= 0 &&
+            current.mousePosition.x < position.width &&
+            current.mousePosition.y < position.height)
+        {
+            constantRepaint = true;
+        }
 
         GUIStyle centeredBold = new GUIStyle(GUI.skin.label);
         centeredBold.alignment = TextAnchor.MiddleCenter;
@@ -244,6 +273,8 @@ public class DrawingUVWindow : EditorWindow
             Repaint();
         }
 
+        // maybe try to figure out better visibility
+        Handles.DrawWireDisc(current.mousePosition, Vector3.forward, (DrawingActorStream.drawingActor.size / 2f) * zoom);
         if (enableWireframe)
         {
             if (DrawingSurfaceStream.uvLines.Length >= 2)
@@ -257,6 +288,7 @@ public class DrawingUVWindow : EditorWindow
                 Handles.DrawLines(DrawingSurfaceStream.uvLines);
             }
         }
+        Handles.matrix = Matrix4x4.identity;
 
         GUI.EndClip();
 

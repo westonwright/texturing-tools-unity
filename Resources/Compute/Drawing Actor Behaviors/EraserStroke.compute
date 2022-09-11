@@ -1,5 +1,9 @@
-﻿#pragma kernel ErasePoint
+﻿#pragma kernel EraseFromStroke
 #include "../Include/TextureFunctions.compute"
+// The eraser texture is drawn like a normal brush
+// to erase, essentially the alpha is inverted then multiplied
+// against the base texture
+// base - (base * erase)
 
 Texture2D<float4> eraseTex;
 RWTexture2D<float4> outputTex;
@@ -7,7 +11,7 @@ RWTexture2D<float4> outputTex;
 int2 outputSize;
 
 [numthreads(8,8,1)]
-void ErasePoint (int2 id : SV_DispatchThreadID)
+void EraseFromStroke(int2 id : SV_DispatchThreadID)
 {
     if (id.x >= outputSize.x || id.y >= outputSize.y)
     {

@@ -6,6 +6,11 @@ using UnityEditor;
 
 public static class DrawingActorSaveLoad
 {
+    /// <summary>
+    /// Loads a Drawing Actor and saves the path chosen
+    /// </summary>
+    /// <param name="path"></param>
+    /// <returns></returns>
     public static DrawingActor LoadDrawingActor(ref string path)
     {
         string newPath = EditorUtility.OpenFilePanel("Load Drawing Actor", "/Assets", "json");
@@ -20,13 +25,18 @@ public static class DrawingActorSaveLoad
         }
     }
 
+    /// <summary>
+    /// Loads a Drawing Actor from the provided path
+    /// </summary>
+    /// <param name="path"></param>
+    /// <returns></returns>
     public static DrawingActor LoadDrawingActor(string path)
     {
         if (path.Length > 0 && System.IO.File.Exists(path))
         {
             string json = System.IO.File.ReadAllText(path);
 
-            DrawingActorSelector selector = JsonUtility.FromJson<DrawingActorSelector>(json);
+            DrawingActorJSONSelector selector = JsonUtility.FromJson<DrawingActorJSONSelector>(json);
             DrawingActor drawingActor = selector.DrawingActor(json);
             drawingActor.EditorInitialize();
             return drawingActor;
@@ -53,7 +63,7 @@ public static class DrawingActorSaveLoad
     public static string SaveDrawingActor(DrawingActor drawingActor)
     {
         string json = GetActorJson(drawingActor);
-        string path = EditorUtility.SaveFilePanel("Save Drawing Actor", "/Assets", drawingActor.actorEnum.ToString(), "json");
+        string path = EditorUtility.SaveFilePanel("Save Drawing Actor", "/Assets", drawingActor.typeEnum.ToString(), "json");
         if (path.Length > 0)
         {
             System.IO.File.WriteAllText(path, json);

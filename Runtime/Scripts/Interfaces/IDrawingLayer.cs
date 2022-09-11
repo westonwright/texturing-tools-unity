@@ -15,6 +15,5 @@ public interface IDrawingLayer
 
     public void HardReset();
     public void ReleaseOutput();
-
     public void BeforeDestroy();
 }

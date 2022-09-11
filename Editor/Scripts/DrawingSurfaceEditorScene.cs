@@ -14,6 +14,7 @@ public partial class DrawingSurfaceEditor : Editor
         //Debug.Log(Tools.viewToolActive);
         // Event.current houses information on scene view input this cycle
         Event current = Event.current;
+
         if (Tools.viewToolActive)
         {
             if (pointerDown)
@@ -69,6 +70,7 @@ public partial class DrawingSurfaceEditor : Editor
 
     private void PointerUpActions()
     {
+        
         pointerDown = false;
         drawingSurface.PointerUp();
         serializedObject.ApplyModifiedProperties();

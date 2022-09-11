@@ -28,8 +28,8 @@ public partial class DrawingSurfaceEditor : Editor
         drawingSurface.GetRequiredComponents();
         drawingSurface.Initialize();
 
-        serializedChannelIndex = serializedObject.FindProperty("activeChannelIndex");
-        serializedChannelList = serializedObject.FindProperty("drawingChannels");
+        serializedChannelIndex = serializedObject.FindProperty("_activeChannelIndex");
+        serializedChannelList = serializedObject.FindProperty("_channels");
         serializedChannel = serializedChannelList.GetArrayElementAtIndex(serializedChannelIndex.intValue);
         serializedLayerList = serializedChannel.FindPropertyRelative("_layers");
         serializedLayerIndex = serializedChannel.FindPropertyRelative("_activeLayerIndex");
@@ -73,9 +73,12 @@ public partial class DrawingSurfaceEditor : Editor
 
     private void RenewActiveChannel()
     {
-        serializedChannel = serializedChannelList.GetArrayElementAtIndex(serializedChannelIndex.intValue);
-        
-        serializedLayerList = serializedChannel.FindPropertyRelative("_layers");
-        serializedLayerIndex = serializedChannel.FindPropertyRelative("_activeLayerIndex");
+        if(serializedChannelList.arraySize > 0)
+        {
+            serializedChannel = serializedChannelList.GetArrayElementAtIndex(serializedChannelIndex.intValue);
+
+            serializedLayerList = serializedChannel.FindPropertyRelative("_layers");
+            serializedLayerIndex = serializedChannel.FindPropertyRelative("_activeLayerIndex");
+        }
     }
 }

@@ -75,6 +75,10 @@ public class DrawingChannel : IDrawingLayerHolder
     private FilterMode filterMode = FilterMode.Point;
 
     // option for color mode? 
+    // if switch gets made, we need to confirm with a popup
+    // because that will mean destructively copying to a new type
+    //[SerializeField]
+    //private RenderTextureFormat _textureFormat = RenderTextureFormat.ARGB32;
 
     // might be able to get rid of this waiting variable?
     private bool _waiting = false;

@@ -6,7 +6,7 @@ using UnityEditor;
 #endif
 
 [System.Serializable]
-public class DrawingActorBrush : DrawingActor
+public class DrawingActorEraser : DrawingActor
 {
     [SerializeField]
     private float _sizeJitter = 0;
@@ -44,9 +44,9 @@ public class DrawingActorBrush : DrawingActor
     [SerializeField]
     private Color _color = new Color(1, 0, 0, 1);
 
-    public DrawingActorBrush()
+    public DrawingActorEraser()
     {
-        _typeEnum = DrawingActorType.Brush;
+        _typeEnum = DrawingActorType.Eraser;
     }
 
     public override void UpdateStroke(Stroke stroke)
@@ -98,11 +98,23 @@ public class DrawingActorBrush : DrawingActor
         }   
     }
 
+    // eraser stroke is drawn like a normal brush
+    // then the stroke's alpha is inverted for final erasing
+    // could update to erase using color data as well
     public override void ApplyStroke(Stroke stroke)
     {
         RenderTexture correctedStroke = TextureCalculations.MultiplyTextureOpacity(TextureCalculations.DuplicateTexture(stroke.strokeTexture), _color.a);
+        RenderTexture outputTexture = TextureCalculations.DuplicateTexture(stroke.refrenceTexture);
+
+        DrawingActorComputeMethods.eraserStrokeCompute.SetTexture(0, "eraseTex", correctedStroke);
+        DrawingActorComputeMethods.eraserStrokeCompute.SetTexture(0, "outputTex", outputTexture);
+
+        DrawingActorComputeMethods.eraserStrokeCompute.SetInts("outputSize", new int[] { outputTexture.width, outputTexture.height });
+
+        DrawingActorComputeMethods.eraserStrokeCompute.Dispatch(0, HelperFunctions.xThreads(outputTexture.width), HelperFunctions.yThreads(outputTexture.height), 1);
+
         stroke.mixedTexture.Release();
-        stroke.mixedTexture = TextureCalculations.MergeTexturesToNew(stroke.refrenceTexture, correctedStroke);
+        stroke.mixedTexture = outputTexture;
         correctedStroke.Release();
     }
 
@@ -125,7 +137,6 @@ public class DrawingActorBrush : DrawingActor
             finalHardness = (finalHardness * Random.Range(1 - _hardnessJitter, 1));
         }
 
-        // multiply by 1.4141 because it is how much bigger it should be due to downsizing
         int diameter = Mathf.CeilToInt(Mathf.Sqrt(Mathf.Pow(transformedTex.width, 2) + Mathf.Pow(transformedTex.height, 2)));
 
         transformedTex = DrawingActorCalculations.Hardness(finalHardness, transformedTex);
@@ -175,16 +186,16 @@ public class DrawingActorBrush : DrawingActor
     {
         EditorGUILayout.BeginHorizontal();
             EditorGUILayout.BeginVertical();
-                EditorGUILayout.LabelField("Brush Texture:", GUILayout.Width(120));
+                EditorGUILayout.LabelField("Eraser Texture:", GUILayout.Width(120));
                 Texture2D _tempTexture = _actorTexture;
                 _tempTexture = (Texture2D)EditorGUILayout.ObjectField(_tempTexture, typeof(Texture2D), false, GUILayout.Width(120), GUILayout.Height(120));
                 if(_tempTexture != _actorTexture)
                 {
                     _actorTexture = _tempTexture;
                     EditorTempSave();
-                }
+                }      
                 //if (actorTexture == null) actorTexture = DrawingStaticMembers.defaultBrushTexture;
-                _color = EditorGUILayout.ColorField(GUIContent.none, _color, true, true, false, GUILayout.MaxWidth(120));
+                EditorWindowHelper.DrawSlider(ref _color.a, "Opacity", 0f, 1f);
 
             EditorGUILayout.EndVertical();
             GUILayout.FlexibleSpace();
@@ -204,7 +215,7 @@ public class DrawingActorBrush : DrawingActor
             GUILayout.FlexibleSpace();
             // texture preview with color
             EditorGUILayout.BeginVertical();
-                EditorGUILayout.LabelField("Brush Preview:", GUILayout.Width(100));
+                EditorGUILayout.LabelField("Eraser Preview:", GUILayout.Width(100));
 
                 Rect r = GUILayoutUtility.GetRect(120, 120);
                 r.width = 120;

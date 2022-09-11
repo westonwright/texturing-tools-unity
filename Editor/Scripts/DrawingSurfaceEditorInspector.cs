@@ -14,6 +14,8 @@ public partial class DrawingSurfaceEditor : Editor
 
     public override void OnInspectorGUI()
     {
+        GUIStyle boldButton = new GUIStyle(GUI.skin.button);
+        boldButton.fontStyle = FontStyle.Bold;
         // remember to disable drawing mode when the final layer has been deleted
 
         // maybe figure out how to undo/redo this tickbox
@@ -47,12 +49,115 @@ public partial class DrawingSurfaceEditor : Editor
 
         // for opening preview use showmodalutility so it cant be docked
 
-        if (GUILayout.Button("Open Drawing Window"))
+        if (GUILayout.Button("Open Drawing Settings"))
         {
-            EditorWindow.GetWindow<DrawingWindow>().Show();
+            DrawingSettingsWindow.OpenWindow();
+        }
+        if (GUILayout.Button("Open UV Drawing Panel"))
+        {
+            DrawingUVWindow.OpenWindow();
         }
 
         EditorGUILayout.LabelField("Channel", EditorStyles.largeLabel);
+
+        // texture color mode
+        //SerializedProperty serializedTextureFormat = serializedChannel.FindPropertyRelative("_textureFormat");
+        //serializedTextureFormat.enumValueIndex = EditorGUILayout.Popup(serializedTextureFormat.enumValueIndex, serializedTextureFormat.enumDisplayNames);
+
+        EditorGUILayout.BeginHorizontal();
+
+        string[] channelOptions = new string[serializedChannelList.arraySize];
+        for (int i = 0; i < channelOptions.Length; i++)
+        {
+            channelOptions[i] = drawingSurface.channels[i].name;
+        }
+
+        int newChannelIndex = EditorGUILayout.Popup(serializedChannelIndex.intValue, channelOptions);
+        if(newChannelIndex != serializedChannelIndex.intValue)
+        {
+            serializedChannelIndex.intValue = newChannelIndex;
+            RenewActiveChannel();
+            serializedObject.ApplyModifiedProperties();
+            drawingSurface.Initialize();
+        }
+
+        if(GUILayout.Button(new GUIContent("+", "Add a New Channel"), boldButton))
+        {
+            serializedChannelList.InsertArrayElementAtIndex(0);
+            serializedChannelIndex.intValue = 0;
+            serializedObject.ApplyModifiedProperties();
+            drawingSurface.CreateNewChannelInPlace();
+            // clear out copied layer refrences
+            SerializedProperty serializedLayers = serializedChannelList.GetArrayElementAtIndex(0).FindPropertyRelative("_layers");
+            int size = serializedLayers.arraySize;
+            while(size > 0)
+            {
+                serializedLayers.DeleteArrayElementAtIndex(size - 1);
+                size--;
+            }
+            serializedObject.ApplyModifiedProperties();
+            drawingSurface.Initialize();
+            RenewActiveChannel();
+            //serializedObject.ApplyModifiedProperties();
+            serializedChannel.FindPropertyRelative("_name").stringValue = EditorStaticMembers.CreateUniqueChannelName(
+                serializedChannelList,
+                serializedChannelIndex.intValue,
+                "_MainTex"
+                );
+
+            //serializedObject.ApplyModifiedProperties();
+            // add a new layer and switch to it
+        }
+        EditorGUI.BeginDisabledGroup(serializedChannelList.arraySize <= 1);
+        if(GUILayout.Button(new GUIContent("-", "Remove Channel"), boldButton))
+        {
+            if(EditorUtility.DisplayDialog(
+                "Drawing System",
+                "Delete the Current Channel \"" + serializedChannel.FindPropertyRelative("_name").stringValue + "\"",
+                "Confirm",
+                "Cancel"
+                )
+                )
+            {
+                // remove current layer
+                serializedObject.ApplyModifiedProperties();
+                drawingSurface.RemovedChannel(serializedChannel.FindPropertyRelative("_name").stringValue);
+                // not doing BeforeDestroy here because it seems to interfere with undos
+                serializedChannelList.DeleteArrayElementAtIndex(serializedChannelIndex.intValue);
+                serializedChannelIndex.intValue = 0;
+                serializedObject.ApplyModifiedProperties();
+                drawingSurface.Initialize();
+                RenewActiveChannel();
+            }
+        }
+        EditorGUI.EndDisabledGroup();
+
+        SerializedProperty resolutionProperty = serializedChannel.FindPropertyRelative("_resolution");
+        GUILayout.FlexibleSpace();
+        GUILayout.Label(resolutionProperty.vector2IntValue.x + "x" + resolutionProperty.vector2IntValue.y);
+        EditorGUILayout.EndHorizontal();
+
+        EditorGUILayout.BeginHorizontal();
+        SerializedProperty channelName = serializedChannel.FindPropertyRelative("_name");
+        string tempString = channelName.stringValue;
+        tempString = EditorGUILayout.DelayedTextField(tempString);
+        if(tempString != channelName.stringValue)
+        {
+            tempString = EditorStaticMembers.CreateUniqueChannelName(
+            serializedChannelList,
+            serializedChannelIndex.intValue,
+            tempString
+            );
+
+            serializedObject.ApplyModifiedProperties();
+            drawingSurface.RemovedChannel(channelName.stringValue);
+            channelName.stringValue = tempString;
+            serializedObject.ApplyModifiedProperties();
+            drawingSurface.Initialize();
+        }
+        serializedObject.ApplyModifiedProperties();
+        EditorGUILayout.EndHorizontal();
+
 
         EditorGUILayout.LabelField("Layers", EditorStyles.largeLabel);
         // draw a line?
@@ -74,7 +179,6 @@ public partial class DrawingSurfaceEditor : Editor
                 break;
             }
         }
-
 
         if (change) drawingSurface.Initialize();
         EditorGUILayout.EndScrollView();
