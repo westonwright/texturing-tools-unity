@@ -9,7 +9,6 @@ This package contains a variety of editor tools to allow you to do some basic te
 Theres a lot of information there like:
 * [Features](https://github.com/westonwright/texture-tools-unity/wiki/Features)
 * [How It Works](https://github.com/westonwright/texturing-tools-unity/wiki/How-It-Works)
-* [Roadmap](https://github.com/westonwright/texture-tools-unity/wiki/Roadmap)
 
 ## Supported Versions
 Unity 2020 and up
