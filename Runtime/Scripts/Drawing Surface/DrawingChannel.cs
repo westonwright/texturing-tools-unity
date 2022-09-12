@@ -296,7 +296,7 @@ public class DrawingChannel : IDrawingLayerHolder
     }
 
     // called to actually make the stroke draw itself
-    public void IterateStroke()
+    public bool IterateStroke()
     {
         if(stroke != null)
         {
@@ -308,8 +308,10 @@ public class DrawingChannel : IDrawingLayerHolder
                     while (stroke.IterateStroke()) { }
                 }
                 TempApplyStroke();
+                return true;
             }
         }
+        return false;
     }
 
     private void FinalApplyStroke()

@@ -246,6 +246,10 @@ public class DrawingSurface : MonoBehaviour
             activeChannel.SetStrokeDiscontinuous(uvCoords);
         TempApplyStroke();
     }
+    public bool UVPointerIdle()
+    {
+        return TempApplyStroke();
+    }
 
     public void PointerUp()
     {
@@ -256,10 +260,14 @@ public class DrawingSurface : MonoBehaviour
         FinalApplyStroke();
     }
 
-    private void TempApplyStroke()
+    private bool TempApplyStroke()
     {
-        activeChannel.IterateStroke();
-        _surfaceMaterial.SetTexture(activeChannel.name, activeChannel.outputTexture);
+        if (activeChannel.IterateStroke())
+        {
+            _surfaceMaterial.SetTexture(activeChannel.name, activeChannel.outputTexture);
+            return true;
+        }
+        return false;
     }
 
     private void FinalApplyStroke()

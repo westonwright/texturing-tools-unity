@@ -6,8 +6,6 @@ using UnityEditor;
 public class DrawingUVWindow : EditorWindow
 {
     private bool constantRepaint = false;
-    private int r = 0;
-    private bool repainted = false;
     private bool enableWireframe = true;
     private Vector2 scrollPercent = Vector2.one * .5f;
     private float zoom = 1;
@@ -271,6 +269,17 @@ public class DrawingUVWindow : EditorWindow
         {
             PointerUpActions();
             Repaint();
+        }
+
+        if (current.type != EventType.MouseDown &&
+            current.type != EventType.MouseDrag &&
+            current.type != EventType.MouseUp &&
+            pointerDown == true)
+        {
+            if (drawingSurface.UVPointerIdle())
+            {
+                Repaint();
+            }
         }
 
         // maybe try to figure out better visibility
