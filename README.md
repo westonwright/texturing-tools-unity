@@ -5,7 +5,7 @@ This package contains a variety of editor tools to allow you to do some basic te
 ## Check the [Wiki](https://github.com/westonwright/texturing-tools-unity/wiki)!
 Theres a lot of information there like:
 * [Features](https://github.com/westonwright/texture-tools-unity/wiki/Features)
-* [Saving](https://github.com/westonwright/texture-tools-unity/wiki/Saving)
+* [How It Works](https://github.com/westonwright/texturing-tools-unity/wiki/How-It-Works)
 * [Roadmap](https://github.com/westonwright/texture-tools-unity/wiki/Roadmap)
 
 ## Supported Versions
